@@ -10,6 +10,8 @@ lazy val root = (project in file("."))
     name := "sangria-example",
     libraryDependencies ++= Seq(
       "org.sangria-graphql" %% "sangria" % "2.0.0",
+      "org.sangria-graphql" %% "sangria-circe" % "1.3.1",
+      "io.circe" %% "circe-generic" % "0.13.0",
       scalaTest % Test
     )
   )
