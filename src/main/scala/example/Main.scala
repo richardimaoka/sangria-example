@@ -92,5 +92,6 @@ object Main {
       scala.concurrent.ExecutionContext.global
     val result: Future[Json] =
       Executor.execute(schema, query, new ProductRepo)
+
   }
 }
