@@ -1,24 +1,28 @@
-import Dependencies._
+name := "sangria-akka-http-example"
+version := "0.1.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "2.13.4"
-ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / organization := "com.example"
-ThisBuild / organizationName := "example"
-val AkkaVersion = "2.6.8"
-val AkkaHttpVersion = "10.2.4"
-lazy val root = (project in file("."))
-  .settings(
-    name := "sangria-example",
-    libraryDependencies ++= Seq(
-      "org.sangria-graphql" %% "sangria" % "2.0.0",
-      "org.sangria-graphql" %% "sangria-circe" % "1.3.1",
-      "io.circe" %% "circe-generic" % "0.13.0",
-      "org.sangria-graphql" %% "sangria-spray-json" % "1.0.2",
-      "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
-      "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
-      "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion
-        scalaTest % Test
-    )
-  )
+description := "An example GraphQL server written with akka-http, circe and sangria."
 
-// See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.
+scalaVersion := "2.13.3"
+scalacOptions ++= Seq("-deprecation", "-feature")
+
+val akkaVersion = "2.6.10"
+val circeVersion = "0.13.0"
+val sangriaVersion = "2.0.1"
+
+libraryDependencies ++= Seq(
+  "org.sangria-graphql" %% "sangria" % sangriaVersion,
+  "org.sangria-graphql" %% "sangria-slowlog" % sangriaVersion,
+  "org.sangria-graphql" %% "sangria-circe" % "1.3.1",
+  "com.typesafe.akka" %% "akka-http" % "10.2.1",
+  "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+  "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "de.heikoseeberger" %% "akka-http-circe" % "1.35.0",
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion,
+  "io.circe" %% "circe-optics" % circeVersion,
+  "org.scalatest" %% "scalatest" % "3.0.8" % Test
+)
+
+Revolver.settings
+enablePlugins(JavaAppPackaging)

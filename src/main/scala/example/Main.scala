@@ -1,97 +1,31 @@
-package example
-import sangria.macros._
-import scala.concurrent.Future
-import io.circe.Json
-import sangria.execution._
-import sangria.marshalling.circe._
-import sangria.schema._
-import sangria.macros.derive._
+name := "sangria-akka-http-example"
+version := "0.1.0-SNAPSHOT"
 
-trait Identifiable {
-  def id: String
-}
+description := "An example GraphQL server written with akka-http, circe and sangria."
 
-case class Picture(width: Int, height: Int, url: Option[String])
+scalaVersion := "2.13.3"
+scalacOptions ++= Seq("-deprecation", "-feature")
 
-case class Product(id: String, name: String, description: String)
-    extends Identifiable {
-  def picture(size: Int): Picture =
-    Picture(width = size, height = size, url = Some(s"//cdh.com$size/$id.jpg"))
-}
+val akkaVersion = "2.6.10"
+val circeVersion = "0.13.0"
+val sangriaVersion = "2.0.1"
 
-class ProductRepo {
-  private val Products = List(
-    Product("1", "Cheesecake", "Tasty"),
-    Product("2", "Health Potion", "+50 HP")
-  )
+libraryDependencies ++= Seq(
+  "org.sangria-graphql" %% "sangria" % sangriaVersion,
+  "org.sangria-graphql" %% "sangria-slowlog" % sangriaVersion,
+  "org.sangria-graphql" %% "sangria-circe" % "1.3.1",
 
-  def product(id: String): Option[Product] =
-    Products find (_.id == id)
+  "com.typesafe.akka" %% "akka-http" % "10.2.1",
+  "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+  "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "de.heikoseeberger" %% "akka-http-circe" % "1.35.0",
 
-  def products: List[Product] = Products
-}
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion,
+  "io.circe" %% "circe-optics" % circeVersion,
+  
+  "org.scalatest" %% "scalatest" % "3.0.8" % Test
+)
 
-object Main {
-
-  val Id = Argument("id", StringType)
-  implicit val PictureType =
-    deriveObjectType[Unit, Picture](
-      ObjectTypeDescription("The product picture"),
-      DocumentField("url", "Picture CDN URL")
-    )
-  val IdentifiableType = InterfaceType(
-    "Identifiable",
-    "Entity that can be identified",
-    fields[Unit, Identifiable](Field("id", StringType, resolve = _.value.id))
-  )
-  val ProductType =
-    deriveObjectType[Unit, Product](
-      Interfaces(IdentifiableType),
-      IncludeMethods("picture")
-    )
-
-  val QueryType = ObjectType(
-    "Query",
-    fields[ProductRepo, Unit](
-      Field(
-        "product",
-        OptionType(ProductType),
-        description = Some("Returns a product with specific `id`."),
-        arguments = Id :: Nil,
-        resolve = c ⇒ c.ctx.product(c arg Id)
-      ),
-      Field(
-        "products",
-        ListType(ProductType),
-        description = Some("Returns a list of all available products."),
-        resolve = _.ctx.products
-      )
-    )
-  )
-
-  def main(args: Array[String]): Unit = {
-    val query = graphql"""
-    query MyProduct {
-      product(id: "2") {
-        name
-        description
-
-        picture(size: 500) {
-          width, height, url
-        }
-      }
-
-      products {
-        name
-      }
-    }
-  """
-    val schema = Schema(QueryType)
-
-    implicit val ec: scala.concurrent.ExecutionContext =
-      scala.concurrent.ExecutionContext.global
-    val result: Future[Json] =
-      Executor.execute(schema, query, new ProductRepo)
-
-  }
-}
+Revolver.settings
+enablePlugins(JavaAppPackaging)
