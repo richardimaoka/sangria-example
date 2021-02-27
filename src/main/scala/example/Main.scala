@@ -1,31 +1,65 @@
-name := "sangria-akka-http-example"
-version := "0.1.0-SNAPSHOT"
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
-description := "An example GraphQL server written with akka-http, circe and sangria."
+import sangria.execution.deferred.DeferredResolver
+import sangria.execution.{ErrorWithResolver, Executor, QueryAnalysisError}
+import sangria.slowlog.SlowLog
 
-scalaVersion := "2.13.3"
-scalacOptions ++= Seq("-deprecation", "-feature")
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
 
-val akkaVersion = "2.6.10"
-val circeVersion = "0.13.0"
-val sangriaVersion = "2.0.1"
+import io.circe.Json
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.jsonMarshaller
+import sangria.marshalling.circe._
 
-libraryDependencies ++= Seq(
-  "org.sangria-graphql" %% "sangria" % sangriaVersion,
-  "org.sangria-graphql" %% "sangria-slowlog" % sangriaVersion,
-  "org.sangria-graphql" %% "sangria-circe" % "1.3.1",
+import SangriaAkkaHttp._
 
-  "com.typesafe.akka" %% "akka-http" % "10.2.1",
-  "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-  "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-  "de.heikoseeberger" %% "akka-http-circe" % "1.35.0",
+object Server extends App with CorsSupport {
+  implicit val system = ActorSystem("sangria-server")
 
-  "io.circe" %% "circe-core" % circeVersion,
-  "io.circe" %% "circe-parser" % circeVersion,
-  "io.circe" %% "circe-optics" % circeVersion,
-  
-  "org.scalatest" %% "scalatest" % "3.0.8" % Test
-)
+  import system.dispatcher
 
-Revolver.settings
-enablePlugins(JavaAppPackaging)
+  val route: Route =
+    optionalHeaderValueByName("X-Apollo-Tracing") { tracing =>
+      path("graphql") {
+        graphQLPlayground ~
+          prepareGraphQLRequest {
+            case Success(GraphQLRequest(query, variables, operationName)) =>
+              val middleware =
+                if (tracing.isDefined) SlowLog.apolloTracing :: Nil else Nil
+              val deferredResolver =
+                DeferredResolver.fetchers(SchemaDefinition.characters)
+              val graphQLResponse = Executor
+                .execute(
+                  schema = SchemaDefinition.StarWarsSchema,
+                  queryAst = query,
+                  userContext = new CharacterRepo,
+                  variables = variables,
+                  operationName = operationName,
+                  middleware = middleware,
+                  deferredResolver = deferredResolver
+                )
+                .map(OK -> _)
+                .recover {
+                  case error: QueryAnalysisError =>
+                    BadRequest -> error.resolveError
+                  case error: ErrorWithResolver =>
+                    InternalServerError -> error.resolveError
+                }
+              complete(graphQLResponse)
+            case Failure(preparationError) =>
+              complete(BadRequest, formatError(preparationError))
+          }
+      }
+    } ~
+      (get & pathEndOrSingleSlash) {
+        redirect("/graphql", PermanentRedirect)
+      }
+
+  val PORT = sys.props.get("http.port").fold(8080)(_.toInt)
+  val INTERFACE = "0.0.0.0"
+  Http().newServerAt(INTERFACE, PORT).bindFlow(corsHandler(route))
+}
