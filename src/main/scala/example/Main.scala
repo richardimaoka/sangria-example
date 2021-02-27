@@ -1,65 +1,34 @@
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-
-import sangria.execution.deferred.DeferredResolver
-import sangria.execution.{ErrorWithResolver, Executor, QueryAnalysisError}
-import sangria.slowlog.SlowLog
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.Route
+import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
 
-import io.circe.Json
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.jsonMarshaller
-import sangria.marshalling.circe._
+import scala.concurrent.Await
+import scala.language.postfixOps
 
-import SangriaAkkaHttp._
+//1
+object Server extends App {
 
-object Server extends App with CorsSupport {
-  implicit val system = ActorSystem("sangria-server")
+  //2
+  val PORT = 8080
 
-  import system.dispatcher
+  implicit val actorSystem = ActorSystem("graphql-server")
+  implicit val materializer = ActorMaterializer()
 
-  val route: Route =
-    optionalHeaderValueByName("X-Apollo-Tracing") { tracing =>
-      path("graphql") {
-        graphQLPlayground ~
-          prepareGraphQLRequest {
-            case Success(GraphQLRequest(query, variables, operationName)) =>
-              val middleware =
-                if (tracing.isDefined) SlowLog.apolloTracing :: Nil else Nil
-              val deferredResolver =
-                DeferredResolver.fetchers(SchemaDefinition.characters)
-              val graphQLResponse = Executor
-                .execute(
-                  schema = SchemaDefinition.StarWarsSchema,
-                  queryAst = query,
-                  userContext = new CharacterRepo,
-                  variables = variables,
-                  operationName = operationName,
-                  middleware = middleware,
-                  deferredResolver = deferredResolver
-                )
-                .map(OK -> _)
-                .recover {
-                  case error: QueryAnalysisError =>
-                    BadRequest -> error.resolveError
-                  case error: ErrorWithResolver =>
-                    InternalServerError -> error.resolveError
-                }
-              complete(graphQLResponse)
-            case Failure(preparationError) =>
-              complete(BadRequest, formatError(preparationError))
-          }
-      }
-    } ~
-      (get & pathEndOrSingleSlash) {
-        redirect("/graphql", PermanentRedirect)
-      }
+  import actorSystem.dispatcher
+  import scala.concurrent.duration._
 
-  val PORT = sys.props.get("http.port").fold(8080)(_.toInt)
-  val INTERFACE = "0.0.0.0"
-  Http().newServerAt(INTERFACE, PORT).bindFlow(corsHandler(route))
+  //3
+  val route: Route = {
+    complete("Hello GraphQL Scala!!!")
+  }
+
+  Http().bindAndHandle(route, "0.0.0.0", PORT)
+  println(s"open a browser with URL: http://localhost:$PORT")
+
+  def shutdown(): Unit = {
+    actorSystem.terminate()
+    Await.result(actorSystem.whenTerminated, 30 seconds)
+  }
 }
