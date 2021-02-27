@@ -287,6 +287,24 @@ object Main {
     //   )
     // )
 
+    val definition = graphql"""
+    type Picture {
+      width: Int!
+      height: Int!
+      url: String
+    }
+
+    interface Identifiable {
+      id: String!
+    }
+
+    type Product implements Identifiable {
+      id: String!
+      name: String!
+      description: String
+      picture(size: Int!): Picture
+    }
+    """
     // val StarWarsSchema = Schema(Query)
   }
 }
