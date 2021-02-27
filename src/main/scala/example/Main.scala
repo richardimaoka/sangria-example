@@ -1,8 +1,12 @@
+package example
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server.Directives._
+import spray.json._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 import scala.concurrent.Await
 import scala.language.postfixOps
@@ -18,6 +22,8 @@ object Server extends App {
 
   import actorSystem.dispatcher
   import scala.concurrent.duration._
+
+  scala.sys.addShutdownHook(() -> shutdown())
 
   //3
   val route: Route = {
