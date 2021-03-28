@@ -3,8 +3,14 @@ import sangria.parser.QueryParser
 import sangria.renderer.QueryRenderer
 import scala.util.Success
 import scala.util.Failure
+import scala.concurrent.Future
 import sangria.macros._
+import scala.concurrent.Await
 import sangria.schema._
+import sangria.execution._
+import sangria.marshalling.circe._
+import io.circe.Json
+import scala.concurrent.duration.Duration
 
 case class Author (
   name: String
@@ -43,5 +49,16 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val schema = Schema(QueryType)
+    val query = 
+      graphql"""
+        query MyAuthor {
+          authors {
+            name
+          }
+        } 
+      """
+    implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global 
+    val result: Future[Json] = Executor.execute(schema, query, new AuthorRepo)
+    println(Await.result(result, Duration(10, "seconds")))
   }
 }
