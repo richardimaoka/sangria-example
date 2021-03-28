@@ -49,6 +49,8 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val schema = Schema(QueryType)
+    println(schema.renderPretty) // Though the above Schema took only the QueryType argument, it renders `type Author {name: String!}` as well
+
     val query = 
       graphql"""
         query MyAuthor {
