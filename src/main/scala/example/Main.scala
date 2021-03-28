@@ -21,14 +21,14 @@ class AuthorRepo {
 }
 
 object Main {
-  val Author = ObjectType(
+  val AuthorType = ObjectType(
     "Author", 
     "An author of a book",
     fields[Unit, Author](
       Field("name", StringType, resolve = _.value.name)
     )
   )
-  val Book = ObjectType(
+  val BookType = ObjectType(
     "Book", 
     "A book",
     fields[Unit, Book](
@@ -36,11 +36,12 @@ object Main {
     )
   )
 
-  val Query = ObjectType("Query", fields[AuthorRepo, Unit](
-    Field("authors", ListType(Author),
-    description = Some("REturns a list of all available authors."),
+  val QueryType = ObjectType("Query", fields[AuthorRepo, Unit](
+    Field("authors", ListType(AuthorType),
+    description = Some("Returns a list of all available authors."),
     resolve = _.ctx.products)))
 
   def main(args: Array[String]): Unit = {
+    val schema = Schema(QueryType)
   }
 }
