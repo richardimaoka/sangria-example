@@ -14,6 +14,12 @@ case class Book (
   title: String
 )
 
+class AuthorRepo {
+  private val authors = List(Author("Sydney"),Author("Ernst"))
+  def author(name: String) : Option[Author] = authors.find(_.name == name)
+  def products: List[Author] = authors
+}
+
 object Main {
   val Author = ObjectType(
     "Author", 
@@ -29,6 +35,11 @@ object Main {
       Field("title", StringType, resolve = _.value.title)
     )
   )
+
+  val Query = ObjectType("Query", fields[AuthorRepo, Unit](
+    Field("authors", ListType(Author),
+    description = Some("REturns a list of all available authors."),
+    resolve = _.ctx.products)))
 
   def main(args: Array[String]): Unit = {
   }
