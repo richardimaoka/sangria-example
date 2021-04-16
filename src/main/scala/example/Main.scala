@@ -55,7 +55,8 @@ object Main {
     "Book",
     "A book",
     fields[Unit, Book](
-      Field("title", StringType, resolve = _.value.title)
+      Field("title", StringType, resolve = _.value.title),
+      Field("author", AuthorType, resolve = _.value.author)
     )
   )
 
@@ -88,6 +89,12 @@ object Main {
         query MyAuthor {
           authors {
             name
+          }
+          books {
+            title
+            author {
+              name
+            }
           }
         } 
       """
