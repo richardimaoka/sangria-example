@@ -30,6 +30,14 @@ class AuthorRepo {
   def products: List[Author] = authors
 }
 
+class BookRepo {
+  private val books = List(
+    Book("The Dark Night", Author("Sydney")),
+    Book("My Life", Author("Ernst")),
+    Book("The House", Author("Ernst"))
+  )
+}
+
 object Main {
   val AuthorType = ObjectType(
     "Author",
