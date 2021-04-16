@@ -38,6 +38,11 @@ class BookRepo {
   )
 }
 
+class CompositeRepo(
+    val authorRepo: AuthorRepo,
+    val bookRepo: BookRepo
+)
+
 object Main {
   val AuthorType = ObjectType(
     "Author",
@@ -56,12 +61,12 @@ object Main {
 
   val QueryType = ObjectType(
     "Query",
-    fields[AuthorRepo, Unit](
+    fields[CompositeRepo, Unit](
       Field(
         "authors",
         ListType(AuthorType),
         description = Some("Returns a list of all available authors."),
-        resolve = _.ctx.products
+        resolve = _.ctx.authorRepo.products
       )
     )
   )
@@ -82,7 +87,11 @@ object Main {
       """
     implicit val ec: scala.concurrent.ExecutionContext =
       scala.concurrent.ExecutionContext.global
-    val result: Future[Json] = Executor.execute(schema, query, new AuthorRepo)
+    val result: Future[Json] = Executor.execute(
+      schema,
+      query,
+      new CompositeRepo(new AuthorRepo, new BookRepo)
+    )
     println(Await.result(result, Duration(10, "seconds")))
 
     val query2 =
