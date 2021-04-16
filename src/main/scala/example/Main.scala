@@ -17,11 +17,15 @@ case class Author(
 )
 
 case class Book(
-    title: String
+    title: String,
+    author: Author
 )
 
 class AuthorRepo {
-  private val authors = List(Author("Sydney"), Author("Ernst"))
+  private val authors = List(
+    Author("Sydney"),
+    Author("Ernst")
+  )
   def author(name: String): Option[Author] = authors.find(_.name == name)
   def products: List[Author] = authors
 }
