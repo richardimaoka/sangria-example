@@ -31,7 +31,7 @@ class AuthorRepo {
 }
 
 class BookRepo {
-  private val books = List(
+  val books = List(
     Book("The Dark Night", Author("Sydney")),
     Book("My Life", Author("Ernst")),
     Book("The House", Author("Ernst"))
@@ -67,6 +67,12 @@ object Main {
         ListType(AuthorType),
         description = Some("Returns a list of all available authors."),
         resolve = _.ctx.authorRepo.products
+      ),
+      Field(
+        "books",
+        ListType(BookType),
+        description = Some("Returns a list of all available books."),
+        resolve = _.ctx.bookRepo.books
       )
     )
   )
