@@ -78,6 +78,20 @@ object Main {
     )
   )
 
+  // val BookNameArg = Argument("bookTitle", StringType)
+  // val AuthorNameArg = Argument("authorName", StringType)
+  // val MutationType = ObjectType(
+  //   "Mutation",
+  //   fields[MyCtx, Unit](
+  //     Field(
+  //       "addBook",
+  //       BookType,
+  //       arguments = BookNameArg :: AuthorNameArg :: Nil
+  //       resolve = _.ctx.mutation.addBook(c.)
+  //     )
+  //   )
+  // )
+
   def main(args: Array[String]): Unit = {
     val schema = Schema(QueryType)
     println(
